@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Bypass & EXIF Injector</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        h2 { color: #333; }
+        input[type="file"] { margin: 20px 0; }
+        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 20px; }
+        img { max-width: 100%; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>AI Bypass Tool</h2>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" name="file" accept="image/*" required>
+            <button type="submit">Process Image</button>
+        </form>
+        <div id="result">
+            <p id="status"></p>
+            <img id="preview" src="" style="display:none;">
+            <br>
+            <a id="downloadLink" href="#" style="display:none;" download>⬇️ Download BAHERUNI.jpg</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const status = document.getElementById('status');
+            const preview = document.getElementById('preview');
+            const downloadLink = document.getElementById('downloadLink');
+            
+            status.innerText = "⏳ Processing...";
+            preview.style.display = 'none';
+            downloadLink.style.display = 'none';
+
+            const fileInput = document.getElementById('fileInput');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('Upload failed');
+                
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                
+                status.innerText = "✅ Successfully Processed!";
+                preview.src = url;
+                preview.style.display = 'block';
+                downloadLink.href = url;
+                downloadLink.style.display = 'inline-block';
+            } catch (error) {
+                status.innerText = "❌ Error processing image.";
+            }
+        });
+    </script>
+</body>
+</html>
