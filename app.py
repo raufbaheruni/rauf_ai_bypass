@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 import io
+import tempfile
 from datetime import datetime
 from PIL import Image
 from flask import Flask, render_template, request, send_file
@@ -83,7 +84,9 @@ def ultimate_ai_bypass(file_stream):
     img_rgb = cv2.cvtColor(img_final, cv2.COLOR_BGR2RGB)
     pil_final_img = Image.fromarray(img_rgb)
 
-    out_path = os.path.join(os.getcwd(), "BAHERUNI.jpg")
+    # Render.com पर फाइल सेव करने के लिए Temp फोल्डर का इस्तेमाल करें
+    temp_dir = tempfile.gettempdir()
+    out_path = os.path.join(temp_dir, "BAHERUNI.jpg")
     pil_final_img.save(out_path, "JPEG", quality=95, subsampling=2, exif=exif_bytes)
     
     return out_path
