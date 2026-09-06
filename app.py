@@ -21,6 +21,14 @@ def ultimate_ai_bypass(file_stream):
         pil_img = pil_img.convert("RGB")
     img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
+    # --- RAM SAVE: Image Auto-Resize ---
+    # अगर फोटो बहुत बड़ी है तो उसे 1500px तक छोटा करें ताकि सर्वर क्रैश न हो
+    max_size = 1500
+    h, w = img.shape[:2]
+    if max(h, w) > max_size:
+        scale = max_size / max(h, w)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
     if img.shape[0] > 10 and img.shape[1] > 10:
         img = img[2:-2, 2:-2]
 
@@ -84,7 +92,7 @@ def ultimate_ai_bypass(file_stream):
     img_rgb = cv2.cvtColor(img_final, cv2.COLOR_BGR2RGB)
     pil_final_img = Image.fromarray(img_rgb)
 
-    # Render.com पर फाइल सेव करने के लिए Temp फोल्डर का इस्तेमाल करें
+    # Render.com पर फाइल सेव करने के लिए Temp फोल्डर
     temp_dir = tempfile.gettempdir()
     out_path = os.path.join(temp_dir, "BAHERUNI.jpg")
     pil_final_img.save(out_path, "JPEG", quality=95, subsampling=2, exif=exif_bytes)
@@ -103,8 +111,12 @@ def upload():
     if file.filename == '':
         return "No file selected", 400
     
-    output_path = ultimate_ai_bypass(file.stream)
-    return send_file(output_path, as_attachment=True, download_name='BAHERUNI.jpg')
+    try:
+        output_path = ultimate_ai_bypass(file.stream)
+        return send_file(output_path, as_attachment=True, download_name='BAHERUNI.jpg')
+    except Exception as e:
+        # अगर कोई एरर आए तो वेबसाइट पर दिख जाएगा कि एरर क्या है
+        return str(e), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
