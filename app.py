@@ -15,13 +15,14 @@ except ImportError:
 
 app = Flask(__name__)
 
-def ultimate_ai_bypass(file_stream):
-    pil_img = Image.open(io.BytesIO(file_stream))
+def ultimate_ai_bypass(file_bytes):
+    # अब हम सीधे बाइट्स (Bytes) पढ़ रहे हैं, यह एरर को ठीक कर देगा
+    pil_img = Image.open(io.BytesIO(file_bytes))
     if pil_img.mode in ("RGBA", "P"):
         pil_img = pil_img.convert("RGB")
     img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
-    # --- RAM SAVE: फोटो को 1000px तक सीमित करें ---
+    # RAM SAVE: Image Auto-Resize
     max_size = 1000
     h, w = img.shape[:2]
     if max(h, w) > max_size:
@@ -45,7 +46,7 @@ def ultimate_ai_bypass(file_stream):
     ycrcb_attacked = cv2.merge((y, cr_blur, cb_blur))
     img_color_attack = cv2.cvtColor(ycrcb_attacked, cv2.COLOR_YCrCb2BGR)
 
-    # EDGE-TARGETED SENSOR NOISE (RAM-Optimized)
+    # EDGE-TARGETED SENSOR NOISE
     gray = cv2.cvtColor(img_color_attack, cv2.COLOR_BGR2GRAY)
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
@@ -58,7 +59,6 @@ def ultimate_ai_bypass(file_stream):
     _, mask = cv2.threshold(edges, 30, 255, cv2.THRESH_BINARY)
     mask = cv2.dilate(mask, np.ones((3,3), np.uint8), iterations=1)
 
-    # बहुत ज्यादा RAM बचाने के लिए 2D नॉइज़ बनाकर सिर्फ मास्क पर लगाएं
     noise_2d = np.random.normal(0, 6.0, (h, w)).astype(np.float32)
     noise_2d = np.where(mask == 255, noise_2d, 0)
     
@@ -116,11 +116,12 @@ def upload():
         return "No file selected", 400
     
     try:
-        output_path = ultimate_ai_bypass(file.stream)
+        # सुधार: फाइल को सीधे स्ट्रीम करने के बजाय बाइट्स में पढ़ लें
+        file_bytes = file.read()
+        output_path = ultimate_ai_bypass(file_bytes)
         return send_file(output_path, as_attachment=True, download_name='BAHERUNI.jpg')
     except Exception as e:
         import traceback
-        # अगर कोई एरर आए तो वेबसाइट पर असली एरर दिख जाएगा
         return traceback.format_exc(), 500
 
 if __name__ == '__main__':
