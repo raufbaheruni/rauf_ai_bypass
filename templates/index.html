@@ -6,13 +6,14 @@
     <title>AI Bypass & EXIF Injector</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
         h2 { color: #333; }
         input[type="file"] { margin: 20px 0; }
         button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
         button:hover { background-color: #0056b3; }
-        #result { margin-top: 20px; }
+        #result { margin-top: 20px; word-wrap: break-word; }
         img { max-width: 100%; border-radius: 5px; margin-top: 10px; }
+        .error-box { background: #ffebee; color: #c62828; padding: 10px; border-radius: 5px; font-size: 12px; text-align: left; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -24,6 +25,7 @@
         </form>
         <div id="result">
             <p id="status"></p>
+            <div id="errorBox" class="error-box" style="display:none;"></div>
             <img id="preview" src="" style="display:none;">
             <br>
             <a id="downloadLink" href="#" style="display:none;" download>⬇️ Download BAHERUNI.jpg</a>
@@ -36,10 +38,12 @@
             const status = document.getElementById('status');
             const preview = document.getElementById('preview');
             const downloadLink = document.getElementById('downloadLink');
+            const errorBox = document.getElementById('errorBox');
             
             status.innerText = "⏳ Processing...";
             preview.style.display = 'none';
             downloadLink.style.display = 'none';
+            errorBox.style.display = 'none';
 
             const fileInput = document.getElementById('fileInput');
             const formData = new FormData();
@@ -47,7 +51,11 @@
 
             try {
                 const response = await fetch('/upload', { method: 'POST', body: formData });
-                if (!response.ok) throw new Error('Upload failed');
+                if (!response.ok) {
+                    // अगर एरर है तो असली टेक्स्ट दिखाओ
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
                 
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
@@ -58,7 +66,9 @@
                 downloadLink.href = url;
                 downloadLink.style.display = 'inline-block';
             } catch (error) {
-                status.innerText = "❌ Error processing image.";
+                status.innerText = "❌ Error processing image:";
+                errorBox.innerText = error.message; // यहाँ असली एरर दिखेगा
+                errorBox.style.display = 'block';
             }
         });
     </script>
