@@ -21,9 +21,8 @@ def ultimate_ai_bypass(file_stream):
         pil_img = pil_img.convert("RGB")
     img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
-    # --- RAM SAVE: Image Auto-Resize ---
-    # अगर फोटो बहुत बड़ी है तो उसे 1500px तक छोटा करें ताकि सर्वर क्रैश न हो
-    max_size = 1500
+    # --- RAM SAVE: फोटो को 1000px तक सीमित करें ---
+    max_size = 1000
     h, w = img.shape[:2]
     if max(h, w) > max_size:
         scale = max_size / max(h, w)
@@ -46,7 +45,7 @@ def ultimate_ai_bypass(file_stream):
     ycrcb_attacked = cv2.merge((y, cr_blur, cb_blur))
     img_color_attack = cv2.cvtColor(ycrcb_attacked, cv2.COLOR_YCrCb2BGR)
 
-    # EDGE-TARGETED SENSOR NOISE
+    # EDGE-TARGETED SENSOR NOISE (RAM-Optimized)
     gray = cv2.cvtColor(img_color_attack, cv2.COLOR_BGR2GRAY)
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
@@ -59,8 +58,14 @@ def ultimate_ai_bypass(file_stream):
     _, mask = cv2.threshold(edges, 30, 255, cv2.THRESH_BINARY)
     mask = cv2.dilate(mask, np.ones((3,3), np.uint8), iterations=1)
 
-    noise = np.random.normal(0, 6.0, img_color_attack.shape)
-    img_final = np.where(mask[:,:,None] == 255, img_color_attack.astype(np.float32) + noise, img_color_attack.astype(np.float32))
+    # बहुत ज्यादा RAM बचाने के लिए 2D नॉइज़ बनाकर सिर्फ मास्क पर लगाएं
+    noise_2d = np.random.normal(0, 6.0, (h, w)).astype(np.float32)
+    noise_2d = np.where(mask == 255, noise_2d, 0)
+    
+    img_final = img_color_attack.astype(np.int16)
+    img_final[:, :, 0] += noise_2d.astype(np.int16)
+    img_final[:, :, 1] += noise_2d.astype(np.int16)
+    img_final[:, :, 2] += noise_2d.astype(np.int16)
     img_final = np.clip(img_final, 0, 255).astype(np.uint8)
 
     # EXIF METADATA INJECTION
@@ -92,7 +97,6 @@ def ultimate_ai_bypass(file_stream):
     img_rgb = cv2.cvtColor(img_final, cv2.COLOR_BGR2RGB)
     pil_final_img = Image.fromarray(img_rgb)
 
-    # Render.com पर फाइल सेव करने के लिए Temp फोल्डर
     temp_dir = tempfile.gettempdir()
     out_path = os.path.join(temp_dir, "BAHERUNI.jpg")
     pil_final_img.save(out_path, "JPEG", quality=95, subsampling=2, exif=exif_bytes)
@@ -115,8 +119,9 @@ def upload():
         output_path = ultimate_ai_bypass(file.stream)
         return send_file(output_path, as_attachment=True, download_name='BAHERUNI.jpg')
     except Exception as e:
-        # अगर कोई एरर आए तो वेबसाइट पर दिख जाएगा कि एरर क्या है
-        return str(e), 500
+        import traceback
+        # अगर कोई एरर आए तो वेबसाइट पर असली एरर दिख जाएगा
+        return traceback.format_exc(), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
